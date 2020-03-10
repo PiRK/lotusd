@@ -66,6 +66,7 @@ Currently, the following notifications are supported:
 
 The socket type is PUB and the address must be a valid ZeroMQ socket
 address. The same address can be used in more than one notification.
+The same notification can be specified more than once.
 
 The option to set the PUB socket's outbound message high water mark
 (SNDHWM) may be set individually for each notification:
@@ -81,7 +82,8 @@ The high water mark value must be an integer greater than or equal to 0.
 For instance:
 
     $ lotusd -zmqpubhashtx=tcp://127.0.0.1:13604 \
-               -zmqpubrawtx=ipc:///tmp/lotusd.tx.raw \
+               -zmqpubhashtx=tcp://192.168.1.2:13604 \
+               -zmqpubrawtx=ipc:///tmp/bitcoind.tx.raw \
                -zmqpubhashtxhwm=10000
 
 Each PUB notification has a topic and body, where the header
