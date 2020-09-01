@@ -15,9 +15,10 @@ from test_framework.address import (
 from test_framework.blocktools import (
     create_block,
     create_coinbase,
-    make_conform_to_ctor,
+    prepare_block,
 )
-from test_framework.messages import CTransaction, FromHex, hash256
+from test_framework.messages import CTransaction, FromHex
+from test_framework.script import CScript, OP_HASH160, OP_EQUAL
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
@@ -323,7 +324,7 @@ class ZMQTest (BitcoinTestFramework):
         if self.is_wallet_compiled():
             self.log.info("Wait for tx from second node")
             payment_txid = self.nodes[1].sendtoaddress(
-                address=self.nodes[0].getnewaddress(), amount=5_000_000)
+                address=self.nodes[0].getnewaddress(), amount=500)
             self.sync_all()
             self.log.info(
                 "Testing sequence notifications with mempool sequence values")
@@ -350,7 +351,7 @@ class ZMQTest (BitcoinTestFramework):
                          mempool_size_delta)
             seq_num += mempool_size_delta
             payment_txid_2 = self.nodes[1].sendtoaddress(
-                self.nodes[0].getnewaddress(), 1_000_000)
+                self.nodes[0].getnewaddress(), 100)
             self.sync_all()
             assert_equal((c_block, "C", None), seq.receive_sequence())
             assert_equal((payment_txid_2, "A", seq_num),
@@ -401,33 +402,37 @@ class ZMQTest (BitcoinTestFramework):
 
             self.log.info("Evict mempool transaction by block conflict")
             orig_txid = self.nodes[0].sendtoaddress(
-                address=self.nodes[0].getnewaddress(), amount=1_000_000)
+                address=self.nodes[0].getnewaddress(), amount=1000)
 
             # More to be simply mined
             more_tx = []
             for _ in range(5):
                 more_tx.append(self.nodes[0].sendtoaddress(
-                    self.nodes[0].getnewaddress(), 100_000))
+                    self.nodes[0].getnewaddress(), 10))
 
             raw_tx = self.nodes[0].getrawtransaction(orig_txid)
+            height = self.nodes[0].getblockcount() + 1
+            coinbase = create_coinbase(height)
+            coinbase.vout[1].scriptPubKey = CScript([OP_HASH160, bytes(20), OP_EQUAL])
             block = create_block(
                 int(self.nodes[0].getbestblockhash(), 16),
-                create_coinbase(self.nodes[0].getblockcount() + 1))
+                coinbase,
+                height
+            )
             tx = FromHex(CTransaction(), raw_tx)
             block.vtx.append(tx)
             for txid in more_tx:
                 tx = FromHex(CTransaction(),
                              self.nodes[0].getrawtransaction(txid))
                 block.vtx.append(tx)
-            make_conform_to_ctor(block)
             block.hashMerkleRoot = block.calc_merkle_root()
-            block.solve()
+            prepare_block(block)
             assert_equal(self.nodes[0].submitblock(block.serialize().hex()),
                          None)
             tip = self.nodes[0].getbestblockhash()
             assert_equal(int(tip, 16), block.sha256)
             orig_txid_2 = self.nodes[0].sendtoaddress(
-                address=self.nodes[0].getnewaddress(), amount=1_000_000)
+                address=self.nodes[0].getnewaddress(), amount=100)
 
             # Flush old notifications until evicted tx original entry
             (hash_str, label, mempool_seq) = seq.receive_sequence()
@@ -489,7 +494,7 @@ class ZMQTest (BitcoinTestFramework):
         num_txs = 5
         for _ in range(num_txs):
             txids.append(self.nodes[1].sendtoaddress(
-                address=self.nodes[0].getnewaddress(), amount=1_000_000))
+                address=self.nodes[0].getnewaddress(), amount=100))
         self.sync_all()
 
         # 1) Consume backlog until we get a mempool sequence number
@@ -517,11 +522,11 @@ class ZMQTest (BitcoinTestFramework):
         # snapshot results
         for _ in range(num_txs):
             txids.append(self.nodes[0].sendtoaddress(
-                address=self.nodes[0].getnewaddress(), amount=1_000_000))
+                address=self.nodes[0].getnewaddress(), amount=100))
         self.sync_all()
         self.nodes[0].generatetoaddress(1, ADDRESS_ECREG_UNSPENDABLE)
         final_txid = self.nodes[0].sendtoaddress(
-            address=self.nodes[0].getnewaddress(), amount=100_000)
+            address=self.nodes[0].getnewaddress(), amount=10)
 
         # 3) Consume ZMQ backlog until we get to "now" for the mempool snapshot
         while True:
