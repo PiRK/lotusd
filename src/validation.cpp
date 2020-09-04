@@ -752,7 +752,8 @@ bool MemPoolAccept::AcceptSingleTransaction(const CTransactionRef &ptx,
         m_view.GetCoin(input.prevout, coin);
         spent_coins.push_back(coin);
     }
-    GetMainSignals().TransactionAddedToMempool(ptx, spent_coins);
+    GetMainSignals().TransactionAddedToMempool(
+            ptx, spent_coins, m_pool.GetAndIncrementSequence());
 
     return true;
 }
