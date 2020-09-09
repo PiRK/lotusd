@@ -30,11 +30,17 @@ class MiniWallet:
         blocks = self._test_node.generatetoaddress(num_blocks, self._address)
         for b in blocks:
             cb_tx = self._test_node.getblock(blockhash=b, verbosity=2)['tx'][0]
+            print(cb_tx)
             self._utxos.append(
                 {'txid': cb_tx['txid'], 'vout': 1, 'value': cb_tx['vout'][1]['value']})
         return blocks
 
-    def send_self_transfer(self, *, fee_rate=Decimal("3000.00"), from_node,
+    def get_utxo(self):
+        """Return the last utxo. Can be used to get the change output
+        immediately after a send_self_transfer"""
+        return self._utxos.pop()
+
+    def send_self_transfer(self, *, fee_rate=Decimal("0.300000"), from_node,
                            utxo_to_spend=None):
         """Create and send a tx with the specified fee_rate. Fee may be exact
          or at most one satoshi higher than needed."""
@@ -47,6 +53,7 @@ class MiniWallet:
         send_value = satoshi_round(
             utxo_to_spend['value'] - fee_rate * (Decimal(size) / 1000))
         fee = utxo_to_spend['value'] - send_value
+        print(self._utxos, send_value)
         assert send_value > 0
 
         tx = CTransaction()
