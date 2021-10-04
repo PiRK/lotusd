@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(block_update) {
         BlockUpdate abu(pindex, s);
         // The use of BOOST_CHECK instead of BOOST_CHECK_EQUAL prevents from
         // having to define operator<<() for each argument type.
-        BOOST_CHECK(abu.getBlockIndex() == pindex);
+        BOOST_CHECK(abu.getVoteItem() == pindex);
         BOOST_CHECK(abu.getStatus() == s);
     }
 }
@@ -426,7 +426,7 @@ BOOST_AUTO_TEST_CASE(block_register) {
     // Now finalize the decision.
     registerNewVote(next(resp));
     BOOST_CHECK_EQUAL(updates.size(), 1);
-    BOOST_CHECK(updates[0].getBlockIndex() == pindex);
+    BOOST_CHECK(updates[0].getVoteItem() == pindex);
     BOOST_CHECK(updates[0].getStatus() == VoteStatus::Finalized);
     updates = {};
 
@@ -452,7 +452,7 @@ BOOST_AUTO_TEST_CASE(block_register) {
     registerNewVote(next(resp));
     BOOST_CHECK(!m_processor->isAccepted(pindex));
     BOOST_CHECK_EQUAL(updates.size(), 1);
-    BOOST_CHECK(updates[0].getBlockIndex() == pindex);
+    BOOST_CHECK(updates[0].getVoteItem() == pindex);
     BOOST_CHECK(updates[0].getStatus() == VoteStatus::Rejected);
     updates = {};
 
@@ -473,7 +473,7 @@ BOOST_AUTO_TEST_CASE(block_register) {
     registerNewVote(next(resp));
     BOOST_CHECK(!m_processor->isAccepted(pindex));
     BOOST_CHECK_EQUAL(updates.size(), 1);
-    BOOST_CHECK(updates[0].getBlockIndex() == pindex);
+    BOOST_CHECK(updates[0].getVoteItem() == pindex);
     BOOST_CHECK(updates[0].getStatus() == VoteStatus::Invalid);
     updates = {};
 
@@ -561,7 +561,7 @@ BOOST_AUTO_TEST_CASE(multi_block_register) {
     // Next vote will finalize block A.
     BOOST_CHECK(registerVotes(firstNodeid, next(resp), updates));
     BOOST_CHECK_EQUAL(updates.size(), 1);
-    BOOST_CHECK(updates[0].getBlockIndex() == pindexA);
+    BOOST_CHECK(updates[0].getVoteItem() == pindexA);
     BOOST_CHECK(updates[0].getStatus() == VoteStatus::Finalized);
     updates = {};
 
@@ -574,7 +574,7 @@ BOOST_AUTO_TEST_CASE(multi_block_register) {
     // Next vote will finalize block B.
     BOOST_CHECK(registerVotes(secondNodeid, resp, updates));
     BOOST_CHECK_EQUAL(updates.size(), 1);
-    BOOST_CHECK(updates[0].getBlockIndex() == pindexB);
+    BOOST_CHECK(updates[0].getVoteItem() == pindexB);
     BOOST_CHECK(updates[0].getStatus() == VoteStatus::Finalized);
     updates = {};
 
