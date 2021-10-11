@@ -191,9 +191,22 @@ class FullBlockTest(BitcoinTestFramework):
         def get_spendable_output():
             return PreviousSpendableOutput(spendable_outputs.pop(0).vtx[0], 1)
 
-        # move the tip back to a previous block
-        def tip(number):
-            self.tip = self.blocks[number]
+        # adds transactions to the block and updates state
+        def update_block(block_number, new_transactions):
+            block = self.blocks[block_number]
+            self.add_transactions_to_block(block, new_transactions)
+            old_sha256 = block.sha256
+            make_conform_to_ctor(block)
+            block.hashMerkleRoot = block.calc_merkle_root()
+            block.solve()
+            # Update the internal state just like in next_block
+            self.tip = block
+            if block.sha256 != old_sha256:
+                self.block_heights[
+                    block.sha256] = self.block_heights[old_sha256]
+                del self.block_heights[old_sha256]
+            self.blocks[block_number] = block
+            return block
 
         # shorthand for functions
         block = self.next_block
@@ -232,7 +245,7 @@ class FullBlockTest(BitcoinTestFramework):
             [self.tip], node, success=False, force_send=True, reject_reason='bad-blk-size')
 
         # Rewind bad block.
-        tip(17)
+        self.tip = self.blocks[17]
 
         # Submit a very large block via RPC
         large_block = block(
